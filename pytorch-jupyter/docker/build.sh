@@ -1,0 +1,1 @@
+docker build -f pytorch-jupyter/docker/Dockerfile pytorch-jupyter -t pytorch-cuda-jupyter

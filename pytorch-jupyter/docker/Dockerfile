@@ -1,0 +1,19 @@
+ARG TAG=2.0.0-cuda11.8-ubuntu22.04
+ARG BASE=anibali/pytorch:$TAG
+FROM $BASE as builder
+
+COPY requirements.txt /tmp/
+
+USER root
+
+RUN apt-get update && apt-get install -y python3-pip \
+    && pip install --no-cache-dir -r /tmp/requirements.txt \
+    && rm /tmp/requirements.txt
+
+COPY . /app/
+RUN rm -f requirements.txt
+
+ENV SHELL=/bin/bash
+
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--allow-root", "--no-browser"]
+EXPOSE 8888

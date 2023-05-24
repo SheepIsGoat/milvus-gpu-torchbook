@@ -1,0 +1,5 @@
+**/volumes/*
+**/wal/*
+**/conf/*
+**/db/*
+**/logs/*

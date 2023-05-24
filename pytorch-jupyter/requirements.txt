@@ -1,0 +1,3 @@
+pymilvus==2.3.0b1
+#numpy==1.24.3
+jupyterlab==4.0.0
