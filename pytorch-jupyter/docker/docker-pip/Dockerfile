@@ -1,6 +1,6 @@
 ARG TAG=2.0.0-cuda11.8-ubuntu22.04
-ARG BASE=anibali/pytorch:$TAG
-FROM $BASE as builder
+ARG BASE_IMAGE=anibali/pytorch:$TAG
+FROM ${BASE_IMAGE} as builder
 
 COPY requirements.txt /tmp/
 
@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y python3-pip \
     && pip install --no-cache-dir -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt
 
-COPY . /app/
-RUN rm -f requirements.txt
+# COPY . /app/
+# RUN rm -f requirements.txt
 
 ENV SHELL=/bin/bash
 

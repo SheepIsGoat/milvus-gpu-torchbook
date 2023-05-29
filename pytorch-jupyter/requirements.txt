@@ -1,3 +1,73 @@
+##############
+# Base Tooling
+##############
 pymilvus==2.3.0b1
-#numpy==1.24.3
 jupyterlab==4.0.0
+#numpy==1.24.3
+
+###################################
+# Hugging Face + Other ML Libraries
+###################################
+# https://huggingface.co/docs/hub/models-libraries
+
+#transformers
+https://github.com/huggingface/transformers/archive/refs/heads/main.zip
+# https://github.com/huggingface/transformers
+# Transformers provides thousands of pretrained models to perform tasks on different 
+# modalities such as text, vision, and audio.
+
+safetensors
+# https://huggingface.co/docs/safetensors/index
+# load models from safetensor files
+
+diffusers
+# https://github.com/huggingface/diffusers
+# Diffusers is the go-to library for state-of-the-art pretrained diffusion models 
+# for generating images, audio, and even 3D structures of molecules
+
+adapter-transformers
+# https://github.com/Adapter-Hub/adapter-transformers
+# an extension of HuggingFace's Transformers library, integrating adapters into 
+# state-of-the-art language models by incorporating AdapterHub, a central repository 
+# for pre-trained adapter modules.
+
+spacy
+# https://github.com/explosion/spaCy
+# spaCy is a library for advanced Natural Language Processing in Python and Cython
+# supporing tokenization and training for 70+ languages.
+##  first run  # pip install -U pip setuptools wheel
+
+sentence-transformers
+# https://github.com/UKPLab/sentence-transformers
+# Multilingual Sentence, Paragraph, and Image Embeddings using BERT & Co.
+
+flair
+# https://github.com/flairNLP/flair
+# A powerful NLP library. A text embedding library. A PyTorch NLP framework. 
+
+allennlp-light
+# https://github.com/MaksymDel/allennlp-light
+# allennlp-light is a port of AllenNLP's core modules and nn portions into a 
+# standalone package with minimum dependencies.
+
+espnet
+# https://github.com/espnet/espnet
+# ESPnet is an end-to-end speech processing toolkit covering end-to-end speech 
+# recognition, text-to-speech, speech translation, speech enhancement, speaker 
+# diarization, spoken language understanding, and so on.
+
+paddlenlp
+# https://github.com/PaddlePaddle/PaddleNLP
+# PaddleNLP是一款简单易用且功能强大的自然语言处理开发库。聚合业界优质预训练模型并提供开箱即用的开
+# 发体验，覆盖NLP多场景的模型库搭配产业实践范例可满足开发者灵活定制的需求。
+
+ai2-tango
+# https://github.com/allenai/tango
+# AI2 Tango replaces messy directories and spreadsheets full of file versions by 
+# organizing experiments into discrete steps that can be cached and reused 
+# throughout the lifetime of a research project.
+
+asteroid
+# https://github.com/asteroid-team/asteroid
+# Asteroid is a Pytorch-based audio source separation toolkit that enables fast 
+# experimentation on common datasets
