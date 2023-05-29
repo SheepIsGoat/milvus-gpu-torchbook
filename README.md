@@ -5,7 +5,7 @@ Milvus is the largest open-source vector database, helping power your machine-le
 GPU support was recently released in Milvus 2.3.0-beta and allows ~10x improvements in processing speeds.
 
 ## What does this repo do?
-Run milvus alongside jupyter notebooks, all powered by CUDA/NVIDIA GPU acceleration in a fully containerized environment. 
+Run a persistent milvus database alongside jupyter notebooks, all powered by CUDA/NVIDIA GPU acceleration in a fully containerized environment. 
 
 This was made for ubuntu22.04 and tested on 4000 series NVIDIA GPUs, but can be easily extensible to other configurations. If you would like additional support added, please let me know or feel free to contribute.
 
@@ -59,18 +59,14 @@ sh pytorch-jupyter/docker/build.sh
 
 NOTE: if you're skipping CUDA, you'll have to change `$BASE` in the Dockerfile and add `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu` to the run command
 
-Start a jupyter docker container
+First do to the directory and make your script executable
 ```
-docker run --rm -it  \
-           --gpus all  \
-           --name my-pycuda-jupy \
-           --network host \
-           -p 8888:8888 \
-           -e JUPYTER_TOKEN=passwd \
-           pytorch-cuda-jupyter
+cd pytorch-jupyter && chmod ug=rwx run.sh
 ```
-
-Open the jupyter notebook in your browser at http://127.0.0.1:8888/lab and use the password we set above (passwd).
+Then run it
+```
+./run.sh
+```
 
 # Run Milvus
 Decide which stack you want to use. The intention of this repo is to make working with a GPU milvus stack easy, so I use the `...gpu.yml` files. The `standalone` stack are much easier for development, but for production workloads you may want to use a `cluster` or consider a managed solution.

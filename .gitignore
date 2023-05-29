@@ -3,3 +3,6 @@
 **/conf/*
 **/db/*
 **/logs/*
+**/models/*
+!**/models/.gitkeep
+.ipynb_checkpoints/*
