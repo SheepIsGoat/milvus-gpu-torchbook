@@ -57,7 +57,10 @@ class Run():
     def _get_gpus(
             self
         ) -> List[dict]:
-        return [DeviceRequest(count=-1, capabilities=[['gpu']])]
+        device_dict = DeviceRequest(count=-1, capabilities=[['gpu']])
+        if not device_dict.get('Driver') or device_dict.get('DeviceIDs'):
+            return []
+        return [device_dict]
     
     def _find_host_port(
             self
