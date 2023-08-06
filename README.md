@@ -54,7 +54,10 @@ docker run -it --gpus all anibali/pytorch:2.0.0-cuda11.8-ubuntu22.04 bash
 # Use Jupyter Container
 Build the pytorch-cuda-jupyter image
 ```
-sh pytorch-jupyter/docker/build.sh
+sh pytorch-jupyter/docker/build.sh $BASE_PIP $CUDA_NOCUDA
+
+#choose base/pip and cuda/nocuda, ex:
+sh pytorch-jupyter/docker/build.sh base cuda
 ```
 
 NOTE: if you're skipping CUDA, you'll have to change `$BASE` in the Dockerfile and add `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu` to the run command
@@ -65,7 +68,7 @@ cd pytorch-jupyter && chmod ug=rwx run.sh
 ```
 Then run it
 ```
-./run.sh
+python3 run.py image $IMAGE_NAME 
 ```
 
 # Run Milvus
