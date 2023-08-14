@@ -6,9 +6,10 @@ COPY requirements.txt /tmp/
 
 USER root
 
-RUN apt-get update && apt-get install -y python3-pip \
+RUN apt-get update && apt-get install -y python3-pip graphviz \
     && pip install --no-cache-dir -r /tmp/requirements.txt \
-    && rm /tmp/requirements.txt
+    && rm /tmp/requirements.txt \
+    && python -m spacy download en_core_web_sm
 
 # COPY . /app/
 # RUN rm -f requirements.txt

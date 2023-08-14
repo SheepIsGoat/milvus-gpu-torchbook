@@ -157,23 +157,13 @@ class Run():
         containers = self.client.containers.list(all=True)
         pattern = re.compile(rf"^{self.container_name}(_([0-9]+))?$")
         desired_group_idx = 2
-        matching_container_idxs = [
+        matching_container_idxs = [0] + [
             int(pattern.match(container.name)[desired_group_idx] or 0) for container in containers
             if pattern.match(container.name)
         ]
         new_img_idx = max(matching_container_idxs) + 1
         self.container_name = self.container_name.rsplit("_", 1)[0] + "_" + str(new_img_idx)
         print("Using next available container name", self.container_name)
-        # while container_exists():
-        #     # [name, index], i.e. MyContainer_3
-        #     name_idx = self.container_name.rsplit("_", 1)
-        #     if len(name_idx) == 1:
-        #         name_idx += ["0"]
-        #     name_idx[1] = str(int(name_idx[1])+1)
-        #     new_name = "_".join(name_idx)
-        #     print(f"Container with name {self.container_name} already exists. "
-        #           f"using {new_name} instead")
-        #     self.container_name = new_name
     
     def _open_browser(self, url):
         """

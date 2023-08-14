@@ -4,6 +4,8 @@
 pymilvus==2.3.0b1
 jupyterlab==4.0.0
 #numpy==1.24.3
+dask[complete]
+graphviz
 
 ###################################
 # Hugging Face + Other ML Libraries
