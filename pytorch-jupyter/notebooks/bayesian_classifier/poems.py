@@ -162,12 +162,6 @@ def get_sequence_logprob(
         argsum += get_transition_logprob(tmat, i, j, row_sums, epsilon_smoothing)
     return argsum
 
-def verify_probabilities(
-        t_mat: 'np.array', 
-        max_err: float=10**-10
-    ) -> bool:
-    return [i for i in np.sum(t_mat, axis=1) if abs(i-1)>max_err] == []
-
 def get_vocab(
         corpus: np.array
     ) -> 'np.array':
@@ -236,8 +230,6 @@ class BayesianCorpus():
     def tmat(self):
         if not hasattr(self, '_tmat'):
             self._tmat, self._row_sums = normalize_tmat(self.raw_tmat)
-            if not verify_probabilities(self._tmat):
-                print(f"Error, transition matrix probabilities for label {self.label} sum to outside acceptable range.")
         return self._tmat
 
     @property
