@@ -8,6 +8,7 @@ import pandas as pd
 import dask.array as da
 import dask
 from sklearn.model_selection import train_test_split
+from scipy.sparse import csr_matrix, coo_matrix
 import spacy
 
 def decode_text(text: str):
@@ -67,58 +68,63 @@ def vectorize_arr(
         ) for line in array
     ], dtype=object)
 
-def get_transition_matrix(
+def initialize_tmat(width):
+    data = []
+    row_ind = []
+    col_ind = []
+    return coo_matrix((data, (row_ind, col_ind)), shape=(width, width))
+
+def tmat_update(
+        sequence: Iterable[int],
+        tmat: coo_matrix
+    ) -> None:
+    if len(sequence) < 2:
+        return
+
+    # Create arrays to store row and column indices for the updates
+    rows, cols = [], []
+
+    # Build the row and column indices based on the transitions in the sequence
+    for i in range(len(sequence) - 1):
+        rows.append(sequence[i])
+        cols.append(sequence[i+1])
+
+    # Create a COO matrix with all data set to ones (since we're counting transitions)
+    # and the shape matching the target CSR matrix
+    data = np.ones(len(rows))
+    updates = coo_matrix((data, (rows, cols)), shape=tmat.shape)
+
+    # Add the COO matrix to the original CSR matrix
+    tmat += updates
+    return tmat
+
+def build_tmat(
         vec_arr: 'np.array', 
         vocab_size: int, 
-        epsilon_smoothing: float=0.5, 
-        ragged: bool=True
-    ) -> Tuple['np.array', 'np.array']:
-
-    # Account for unknown words
-    vocab_size += 1
-    
+    ) -> 'coo_matrix':
+    print(f"Building transition matrix with size {vocab_size} X {vocab_size}")
     # Initialize matrices with zeros
-    trans_mat = np.zeros((vocab_size, vocab_size))
-    init_mat = np.zeros(vocab_size)
+    tmat = initialize_tmat(vocab_size)
 
     # For the initial states and transitions
-    if ragged:
-        for sentence in vec_arr:
-            if len(sentence) == 0:
-                continue
-            init_mat[sentence[0]] += 1
-            
-            for i in range(len(sentence)-1):
-                trans_mat[sentence[i], sentence[i+1]] += 1
-    else:
-        # For the initial states
-        starts = vec_arr[:, 0]
-        init_counts, _ = np.histogram(starts, bins=np.arange(vocab_size + 1))
-        init_mat += init_counts
-    
-        # For the transitions
-        y, x = vec_arr[:, :-1].ravel(), vec_arr[:, 1:].ravel()
-        hist, _, _ = np.histogram2d(x, y, bins=(vocab_size, vocab_size))
-        trans_mat += hist
+    for sequence in vec_arr:
+        tmat = tmat_update(sequence, tmat)
 
-    # Apply epsilon smoothing
-    e_smooth = lambda x: x + epsilon_smoothing
-    e_smooth_arr = np.vectorize(e_smooth)
-    
-    trans_mat = e_smooth_arr(trans_mat)
-    init_mat = e_smooth_arr(init_mat)
+    return tmat
 
-    # Normalize
-    normalized_trans_mat = trans_mat / trans_mat.sum(axis=1, keepdims=True)
-    normalized_init_mat = init_mat / init_mat.sum()
-    
-    return normalized_trans_mat, normalized_init_mat
+def normalize_tmat(
+        tmat: 'coo_matrix'
+    ) -> 'csr_matrix':
+    row_sums = np.array(tmat.sum(axis=1)).ravel()
 
-def get_logprob_mat(
-        t_mat: 'np.array'
-    ) -> 'np.array':
-    vec_log = np.vectorize(math.log)
-    return vec_log(t_mat)
+    # Compute the inverse of the row sums (avoiding division by zero)
+    inv_row_sums = np.reciprocal(row_sums, where=row_sums!=0)
+
+    # Use broadcasting to normalize rows
+    normalized_trans_mat = tmat.multiply(inv_row_sums.reshape(-1, 1))
+    normalized_trans_mat = normalized_trans_mat.tocsr()
+
+    return normalized_trans_mat, row_sums
 
 def encode_sequence(
         sequence: Iterable[str],
@@ -126,15 +132,35 @@ def encode_sequence(
     ) -> List[int]:
     return [word2idx.get(word, word2idx.get("$NEWCHAR$")) for word in sequence]
 
-def get_logprob_val(
-        encoded_sequence: List[str], 
-        logprob_mat: 'np.array',
-        epsilon: bool=1
+def get_transition_logprob(
+        tmat: 'csr_matrix', 
+        i: int, 
+        j: int, 
+        row_sums: List[float],
+        epsilon_smoothing: float=0.5, 
+    ) -> float:
+    num_columns = tmat.shape[1]
+    total_smoothing = epsilon_smoothing * num_columns
+    
+    observed_p = tmat[i, j]
+    
+    # Compute the probability including smoothing
+    smoothed_p = (observed_p + epsilon_smoothing) / (row_sums[i] + total_smoothing)
+    
+    return np.log(smoothed_p)
+
+def get_sequence_logprob(
+        encoded_sequence: List[int], 
+        tmat: 'csr_matrix', 
+        row_sums: List[float], 
+        epsilon_smoothing: float=0.1, 
     ) -> float:
     argsum = 0
-    for i in range(len(encoded_sequence)-1):
-        argsum += logprob_mat[encoded_sequence[i], encoded_sequence[i+1]]
-    return argsum + epsilon
+    for idx in range(len(encoded_sequence)-1):
+        i = encoded_sequence[idx]
+        j = encoded_sequence[idx+1]
+        argsum += get_transition_logprob(tmat, i, j, row_sums, epsilon_smoothing)
+    return argsum
 
 def verify_probabilities(
         t_mat: 'np.array', 
@@ -201,23 +227,35 @@ class BayesianCorpus():
         return self._vectorized_arr
     
     @property
-    def transition_mat(self):
-        if not hasattr(self, '_transition_mat'):
-            self._transition_mat, self.init_prob = \
-                get_transition_matrix(self.vectorized_arr, len(self.idx2word), self.ragged)
-            if not verify_probabilities(self._transition_mat):
-                print(f"Error, transition matrix probabilities for label {self.label} sum to outside acceptable range.")
-        return self._transition_mat
+    def raw_tmat(self):
+        if not hasattr(self, '_raw_tmat'):
+            self._raw_tmat = build_tmat(self.vectorized_arr, len(self.idx2word))
+        return self._raw_tmat
 
     @property
-    def logprob_mat(self):
-        if not hasattr(self, '_logprob_mat'):
-            self._logprob_mat = get_logprob_mat(self.transition_mat)
-        return self._logprob_mat
+    def tmat(self):
+        if not hasattr(self, '_tmat'):
+            self._tmat, self._row_sums = normalize_tmat(self.raw_tmat)
+            if not verify_probabilities(self._tmat):
+                print(f"Error, transition matrix probabilities for label {self.label} sum to outside acceptable range.")
+        return self._tmat
+
+    @property
+    def row_sums(self):
+        if not hasattr(self, '_row_sums'):
+            print("self.row_sums not set. Setting self.row_sums via calling self.tmat.")
+            self.tmat
+        return self._row_sums
+
+    # @property
+    # def logprob_mat(self):
+    #     if not hasattr(self, '_logprob_mat'):
+    #         self._logprob_mat = get_logprob_mat(self.tmat)
+    #     return self._logprob_mat
 
     def infer_logprob(self, line):
         encoded_sequence = encode_sequence(line, self.word2idx)
-        return get_logprob_val(encoded_sequence, self.logprob_mat) + math.log(self.prevalence)
+        return get_sequence_logprob(encoded_sequence, self.tmat, self.row_sums) + math.log(self.prevalence)
 
 def combine_vocabs(
         bayesian_corpora: Iterable['BayesianCorpus']
