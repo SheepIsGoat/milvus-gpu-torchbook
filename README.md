@@ -68,7 +68,11 @@ cd pytorch-jupyter && chmod ug=rwx run.sh
 ```
 Then run it
 ```
-python3 run.py image $IMAGE_NAME 
+python3 pytorch-jupyter/run.py start --image="$IMAGE_NAME"
+
+# or mount models on read volumes
+python3 pytorch-jupyter/run.py start --image="ml-dev-container" --search="llama"
+
 ```
 
 # Run Milvus
