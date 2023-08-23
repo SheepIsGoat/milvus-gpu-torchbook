@@ -5,6 +5,7 @@ import time
 import socket
 from typing import Dict, Optional, List
 import re
+import subprocess
 
 # pip install docker fire
 import docker
@@ -60,10 +61,22 @@ class Run():
     def _get_gpus(
             self
         ) -> List[dict]:
-        device_dict = DeviceRequest(count=-1, capabilities=[['gpu']])
-        if not device_dict.get('Driver') or device_dict.get('DeviceIDs'):
+        if not self._host_has_gpu():
             return []
-        return [device_dict]
+        return [DeviceRequest(count=-1, capabilities=[['gpu']])]
+
+    def _host_has_gpu(
+            self
+        ) -> bool:
+        try:
+            result = subprocess.run(['nvidia-smi'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode == 0:
+                return True
+            return False
+        except FileNotFoundError:
+            return False
+
+
     
     def _find_host_port(
             self
@@ -128,23 +141,6 @@ class Run():
         ]
         self._set_volumes(matches, read_only=True)
 
-    def models(
-            self,
-            search,
-            exact: bool=False
-        ) -> None:
-        self.volumes(
-            search=search,
-            subdir="models",
-            exact=exact
-        )
-
-    def name_container(self, name):
-        self.container_name = name
-    
-    def image(self, img_name):
-        self.container_img = img_name
-
     def _check_container_name(self):
         """
         If container name already exists, increment the name by 1
@@ -160,20 +156,10 @@ class Run():
         matching_container_idxs = [
             int(pattern.match(container.name)[desired_group_idx] or 0) for container in containers
             if pattern.match(container.name)
-        ]
+        ] or [0]
         new_img_idx = max(matching_container_idxs) + 1
         self.container_name = self.container_name.rsplit("_", 1)[0] + "_" + str(new_img_idx)
         print("Using next available container name", self.container_name)
-        # while container_exists():
-        #     # [name, index], i.e. MyContainer_3
-        #     name_idx = self.container_name.rsplit("_", 1)
-        #     if len(name_idx) == 1:
-        #         name_idx += ["0"]
-        #     name_idx[1] = str(int(name_idx[1])+1)
-        #     new_name = "_".join(name_idx)
-        #     print(f"Container with name {self.container_name} already exists. "
-        #           f"using {new_name} instead")
-        #     self.container_name = new_name
     
     def _open_browser(self, url):
         """
@@ -220,6 +206,19 @@ class Run():
         except Exception as e:
             self.error = True
             print("Error starting container,", str(e))
+    
+    def start(
+            self, 
+            image: str,
+            search: str=None,
+            subdir: str='models',
+            exact: bool=False, 
+            name: str='my-milvus-env'
+        ) -> None:
+        self.container_img = image
+        if search is not None:
+            self.volumes(search, subdir, exact)
+        self.container_name = name
 
 if __name__=="__main__":
     runner = Run()
